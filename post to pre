@@ -1,0 +1,84 @@
+// Helper function to get element by XPath
+function getElementByXPath(xpath) {
+    return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
+}
+
+// Helper function to click the OK button
+function clickOkButton() {
+    const okButtonSelectors = [
+        'button[id*="ok"]',       // ID contains "ok"
+        'button[class*="ok"]',    // Class contains "ok"
+        'button[name*="ok"]',     // Name contains "ok"
+        'button[value*="ok"]',    // Value contains "ok"
+        'button'                  // Fallback to just find any button
+    ];
+
+    for (let selector of okButtonSelectors) {
+        const okButton = document.querySelector(selector);
+        if (okButton && okButton.textContent.includes("OK")) {
+            console.log(`Found OK button by selector (${selector}):`, okButton);
+            okButton.click();
+            return;
+        }
+    }
+
+    console.error("OK button not found using common selectors. Inspect the pop-up and update the script accordingly.");
+}
+
+// Helper function to override the confirmation dialog
+function overrideConfirmationDialog() {
+    window.confirm = function(message) {
+        console.log(`Confirmation dialog with message: "${message}"`);
+        return true;  // Automatically click "OK"
+    };
+}
+
+// Main function to execute the steps
+async function executeSteps(msisdns, accountNumber, srNumber, date) {
+    overrideConfirmationDialog();  // Override confirmation dialog before starting
+
+    for (const msisdn of msisdns) {
+        // Paste MSISDN
+        getElementByXPath('//*[@id="msisdn"]').value = msisdn;
+        // Paste account number
+        getElementByXPath('//*[@id="account"]').value = accountNumber;
+        // Click validate
+        getElementByXPath('//*[@id="validate_label"]').click();
+        
+        // Wait for 10 seconds
+        await new Promise(resolve => setTimeout(resolve, 10000));
+        
+        // Click yes tick box
+        getElementByXPath('//*[@id="use_contact"]').click();
+        // Paste date
+        getElementByXPath('//*[@id="action_date"]').value = date;
+        // Select reason from dropdown
+        let reasonDropdown = getElementByXPath('//*[@id="reason"]');
+        for (let option of reasonDropdown.options) {
+            if (option.text === 'Post2Pre - Other') {
+                reasonDropdown.value = option.value;
+                break;
+            }
+        }
+        // Paste SR number
+        getElementByXPath('//*[@id="comments"]').value = srNumber;
+        
+        // Click submit
+        getElementByXPath('//*[@id="add_label"]').click();
+
+        // Wait for the pop-up and click OK
+        await new Promise(resolve => setTimeout(resolve, 6000)); // Adjust this delay if necessary
+        clickOkButton(); // Click OK on the pop-up
+
+        // Wait for 6 seconds before the next iteration
+        await new Promise(resolve => setTimeout(resolve, 6000));
+    }
+}
+
+// Example usage with GUI prompts
+const msisdns = prompt("Enter the list of MSISDNS separated by spaces:").split(" ");
+const accountNumber = prompt("Enter the account number:");
+const srNumber = prompt("Enter the SR number:");
+const date = prompt("Enter the date:");
+
+executeSteps(msisdns, accountNumber, srNumber, date);
