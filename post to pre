@@ -1,39 +1,3 @@
-// Helper function to get element by XPath
-function getElementByXPath(xpath) {
-    return document.evaluate(xpath, document, null, XPathResult.FIRST_ORDERED_NODE_TYPE, null).singleNodeValue;
-}
-
-// Helper function to click the OK button
-function clickOkButton() {
-    const okButtonSelectors = [
-        'button[id*="ok"]',       // ID contains "ok"
-        'button[class*="ok"]',    // Class contains "ok"
-        'button[name*="ok"]',     // Name contains "ok"
-        'button[value*="ok"]',    // Value contains "ok"
-        'button'                  // Fallback to just find any button
-    ];
-
-    for (let selector of okButtonSelectors) {
-        const okButton = document.querySelector(selector);
-        if (okButton && okButton.textContent.includes("OK")) {
-            console.log(`Found OK button by selector (${selector}):`, okButton);
-            okButton.click();
-            return;
-        }
-    }
-
-    console.error("OK button not found using common selectors. Inspect the pop-up and update the script accordingly.");
-}
-
-// Helper function to override the confirmation dialog
-function overrideConfirmationDialog() {
-    window.confirm = function(message) {
-        console.log(`Confirmation dialog with message: "${message}"`);
-        return true;  // Automatically click "OK"
-    };
-}
-
-// Main function to execute the steps
 async function executeSteps(msisdns, accountNumber, srNumber, date) {
     overrideConfirmationDialog();  // Override confirmation dialog before starting
 
@@ -50,8 +14,14 @@ async function executeSteps(msisdns, accountNumber, srNumber, date) {
         
         // Click yes tick box
         getElementByXPath('//*[@id="use_contact"]').click();
-        // Paste date
-        getElementByXPath('//*[@id="action_date"]').value = date;
+        
+        // Format the date to "DD-MM-YYYY" format (e.g., convert "12/07/2024" to "12-07-2024")
+        const formattedDate = date.replace(/\//g, '-'); // Replace slashes with dashes
+        
+        // Paste formatted date into the date field
+        const dateField = getElementByXPath('//*[@id="action_date"]');
+        dateField.value = formattedDate;
+        
         // Select reason from dropdown
         let reasonDropdown = getElementByXPath('//*[@id="reason"]');
         for (let option of reasonDropdown.options) {
@@ -60,8 +30,10 @@ async function executeSteps(msisdns, accountNumber, srNumber, date) {
                 break;
             }
         }
+        
         // Paste SR number
-        getElementByXPath('//*[@id="comments"]').value = srNumber;
+        const srNumberField = getElementByXPath('//*[@id="comments"]');
+        srNumberField.value = srNumber;
         
         // Click submit
         getElementByXPath('//*[@id="add_label"]').click();
@@ -75,10 +47,3 @@ async function executeSteps(msisdns, accountNumber, srNumber, date) {
     }
 }
 
-// Example usage with GUI prompts
-const msisdns = prompt("Enter the list of MSISDNS separated by spaces:").split(" ");
-const accountNumber = prompt("Enter the account number:");
-const srNumber = prompt("Enter the SR number:");
-const date = prompt("Enter the date:");
-
-executeSteps(msisdns, accountNumber, srNumber, date);
