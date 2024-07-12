@@ -16,7 +16,7 @@ function clickOkButton() {
     for (let selector of okButtonSelectors) {
         const okButton = document.querySelector(selector);
         if (okButton && okButton.textContent.includes("OK")) {
-            console.log(Found OK button by selector (${selector}):, okButton);
+            console.log(`Found OK button by selector (${selector}):`, okButton);
             okButton.click();
             return;
         }
@@ -28,7 +28,7 @@ function clickOkButton() {
 // Helper function to override the confirmation dialog
 function overrideConfirmationDialog() {
     window.confirm = function(message) {
-        console.log(Confirmation dialog with message: "${message}");
+        console.log(`Confirmation dialog with message: "${message}"`);
         return true;  // Automatically click "OK"
     };
 }
@@ -50,8 +50,14 @@ async function executeSteps(msisdns, accountNumber, srNumber, date) {
         
         // Click yes tick box
         getElementByXPath('//*[@id="use_contact"]').click();
-        // Paste date
-        getElementByXPath('//*[@id="action_date"]').value = date;
+        
+        // Format the date to "DD-MM-YYYY" format (e.g., convert "12/07/2024" to "12-07-2024")
+        const formattedDate = date.replace(/\//g, '-'); // Replace slashes with dashes
+        
+        // Paste formatted date into the date field
+        const dateField = getElementByXPath('//*[@id="action_date"]');
+        dateField.value = formattedDate;
+        
         // Select reason from dropdown
         let reasonDropdown = getElementByXPath('//*[@id="reason"]');
         for (let option of reasonDropdown.options) {
@@ -60,8 +66,10 @@ async function executeSteps(msisdns, accountNumber, srNumber, date) {
                 break;
             }
         }
+        
         // Paste SR number
-        getElementByXPath('//*[@id="comments"]').value = srNumber;
+        const srNumberField = getElementByXPath('//*[@id="comments"]');
+        srNumberField.value = srNumber;
         
         // Click submit
         getElementByXPath('//*[@id="add_label"]').click();
@@ -82,3 +90,4 @@ const srNumber = prompt("Enter the SR number:");
 const date = prompt("Enter the date:");
 
 executeSteps(msisdns, accountNumber, srNumber, date);
+
